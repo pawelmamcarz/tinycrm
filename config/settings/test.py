@@ -10,3 +10,9 @@ STORAGES = {
     "default": {"BACKEND": "django.core.files.storage.InMemoryStorage"},
     "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"},
 }
+
+# Osobna baza testowa per agent/proces: TEST_DB_SUFFIX=voice → test_tinycrm_voice
+import os  # noqa: E402
+
+_suffix = os.environ.get("TEST_DB_SUFFIX", "")
+DATABASES["default"]["TEST"] = {"NAME": f"test_tinycrm_{_suffix}" if _suffix else "test_tinycrm"}  # noqa: F405
