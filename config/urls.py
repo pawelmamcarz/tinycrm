@@ -1,9 +1,11 @@
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
+from django.http import HttpResponse
 from django.urls import include, path
 
 urlpatterns = [
+    path("healthz/", lambda request: HttpResponse("ok", content_type="text/plain"), name="healthz"),
     path("admin/", admin.site.urls),
     path("", include("apps.core.urls")),
     path("", include("apps.users.urls")),
