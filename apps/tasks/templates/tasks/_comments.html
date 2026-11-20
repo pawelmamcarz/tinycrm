@@ -1,0 +1,10 @@
+<div id="task-comments" class="flex flex-col gap-2">
+  {% for c in comments %}
+  <div class="chat chat-start">
+    <div class="chat-header text-xs opacity-70">{{ c.author|default:"—" }} · {{ c.created_at|date:"d.m.Y H:i" }}</div>
+    <div class="chat-bubble chat-bubble-neutral whitespace-pre-line">{{ c.text }}</div>
+  </div>
+  {% empty %}
+  <p class="opacity-60 text-sm">Brak komentarzy.</p>
+  {% endfor %}
+</div>

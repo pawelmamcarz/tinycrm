@@ -1,0 +1,74 @@
+{% extends "base/base.html" %}
+{% load service_tags %}
+{% block title %}Serwis · TinyCRM{% endblock %}
+{% block content %}
+<div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+  <h1 class="text-2xl font-bold">🔧 Serwis</h1>
+  <div class="flex flex-wrap gap-2">
+    <a class="btn btn-sm btn-primary" href="{% url 'service:ticket_create' %}">+ Zgłoszenie</a>
+    <a class="btn btn-sm" href="{% url 'service:device_create' %}">+ Urządzenie</a>
+  </div>
+</div>
+
+<div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
+  <a href="{% url 'service:devices' %}?overdue=1" class="stat bg-base-100 rounded-box shadow p-3 {% if stats.overdue %}border-l-4 border-error{% endif %}">
+    <div class="stat-title text-xs whitespace-normal">Przeglądy po terminie</div>
+    <div class="stat-value text-3xl {% if stats.overdue %}text-error{% endif %}">{{ stats.overdue }}</div>
+  </a>
+  <a href="{% url 'service:devices' %}" class="stat bg-base-100 rounded-box shadow p-3">
+    <div class="stat-title text-xs whitespace-normal">Przeglądy w 30 dni</div>
+    <div class="stat-value text-3xl text-warning">{{ stats.due_30 }}</div>
+  </a>
+  <a href="{% url 'service:tickets' %}" class="stat bg-base-100 rounded-box shadow p-3">
+    <div class="stat-title text-xs whitespace-normal">Otwarte zgłoszenia</div>
+    <div class="stat-value text-3xl">{{ stats.open_tickets }}</div>
+  </a>
+  <a href="{% url 'service:parts' %}" class="stat bg-base-100 rounded-box shadow p-3">
+    <div class="stat-title text-xs whitespace-normal">Części do zamówienia</div>
+    <div class="stat-value text-3xl {% if stats.parts_to_order %}text-error{% endif %}">{{ stats.parts_to_order }}</div>
+  </a>
+  <a href="{% url 'service:parts' %}" class="stat bg-base-100 rounded-box shadow p-3">
+    <div class="stat-title text-xs whitespace-normal">Części w drodze</div>
+    <div class="stat-value text-3xl">{{ stats.parts_in_transit }}</div>
+  </a>
+  <div class="stat bg-base-100 rounded-box shadow p-3">
+    <div class="stat-title text-xs whitespace-normal">Gwarancje kończące się w 60 dni</div>
+    <div class="stat-value text-3xl text-info">{{ stats.warranty_ending }}</div>
+  </div>
+</div>
+
+<div class="grid md:grid-cols-2 gap-4">
+  <div class="card bg-base-100 shadow"><div class="card-body p-4">
+    <h2 class="card-title text-base">Przeglądy po terminie</h2>
+    {% for device in overdue_devices %}{% include "service/_device_row.html" %}{% empty %}<p class="text-sm opacity-60">Brak — wszystko w terminie. 👍</p>{% endfor %}
+  </div></div>
+  <div class="card bg-base-100 shadow"><div class="card-body p-4">
+    <h2 class="card-title text-base">Przeglądy w najbliższych 30 dniach</h2>
+    {% for device in upcoming_devices %}{% include "service/_device_row.html" %}{% empty %}<p class="text-sm opacity-60">Brak przeglądów w tym okresie.</p>{% endfor %}
+  </div></div>
+  <div class="card bg-base-100 shadow"><div class="card-body p-4">
+    <h2 class="card-title text-base">Otwarte zgłoszenia (najstarsze)</h2>
+    {% for ticket in open_tickets %}{% include "service/_ticket_row.html" %}{% empty %}<p class="text-sm opacity-60">Brak otwartych zgłoszeń.</p>{% endfor %}
+    <a class="link link-primary text-sm" href="{% url 'service:tickets' %}">Wszystkie zgłoszenia →</a>
+  </div></div>
+  <div class="card bg-base-100 shadow"><div class="card-body p-4">
+    <h2 class="card-title text-base">Części do zamówienia / w drodze</h2>
+    {% for order in parts_pending %}
+    <div class="flex justify-between items-center gap-2 py-1 border-b border-base-200 text-sm">
+      <span>{{ order.part_name }} ×{{ order.quantity }} <span class="opacity-60">· {{ order.customer }}</span></span>
+      <span class="badge badge-sm {{ order.status|service_badge }}">{{ order.get_status_display }}</span>
+    </div>
+    {% empty %}<p class="text-sm opacity-60">Nic nie czeka na zamówienie.</p>{% endfor %}
+    <a class="link link-primary text-sm" href="{% url 'service:parts' %}">Tablica części →</a>
+  </div></div>
+  <div class="card bg-base-100 shadow md:col-span-2"><div class="card-body p-4">
+    <h2 class="card-title text-base">Gwarancje kończące się w 60 dni — szansa na ofertę</h2>
+    {% for device in warranty_devices %}
+    <a href="{% url 'service:device_detail' device.pk %}" class="flex justify-between gap-2 py-1 border-b border-base-200 text-sm hover:bg-base-200">
+      <span>{{ device }} <span class="opacity-60">· {{ device.customer }}</span></span>
+      <span>do {{ device.warranty_until|date:"d.m.Y" }}</span>
+    </a>
+    {% empty %}<p class="text-sm opacity-60">Brak.</p>{% endfor %}
+  </div></div>
+</div>
+{% endblock %}

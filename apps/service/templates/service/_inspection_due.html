@@ -1,0 +1,1 @@
+{% if device.next_inspection_due %}<span class="badge whitespace-nowrap {% if device.is_inspection_overdue %}badge-error{% elif device.days_to_inspection <= 30 %}badge-warning{% else %}badge-ghost{% endif %}">przegląd {{ device.next_inspection_due|date:"d.m.Y" }}</span>{% else %}<span class="badge badge-ghost whitespace-nowrap">brak terminu</span>{% endif %}

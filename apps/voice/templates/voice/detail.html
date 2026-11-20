@@ -1,0 +1,156 @@
+{% extends "base/base.html" %}
+{% block title %}Notatka #{{ note.pk }} · TinyCRM{% endblock %}
+{% block head %}<style>[x-cloak]{display:none !important}</style>{% endblock %}
+{% block content %}
+<div class="text-sm breadcrumbs mb-2">
+  <ul>
+    <li><a href="{% url 'voice:list' %}">Notatki</a></li>
+    <li>Notatka #{{ note.pk }}</li>
+  </ul>
+</div>
+
+<div class="card bg-base-100 shadow mb-3">
+  <div class="card-body p-4 gap-2">
+    <div class="flex flex-wrap items-center gap-2">
+      {% include "voice/_status_badge.html" %}
+      {% if extraction.engine == "ai" %}<span class="badge badge-primary badge-outline">🤖 AI</span>
+      {% elif extraction.engine %}<span class="badge badge-outline">🧩 heurystyka</span>{% endif %}
+      <span class="text-sm opacity-70">{{ note.author }} · {{ note.recorded_at|default:note.created_at|date:"d.m.Y H:i" }}</span>
+    </div>
+    {% if note.error %}<div class="alert alert-warning text-sm">⚠️ {{ note.error }}</div>{% endif %}
+    {% if is_processing %}{% include "voice/_processing.html" %}{% endif %}
+    {% if extraction.summary %}<p class="font-medium">{{ extraction.summary }}</p>{% endif %}
+    {% if extraction.contact_person %}<p class="text-sm">👤 Osoba kontaktowa: <strong>{{ extraction.contact_person }}</strong></p>{% endif %}
+    {% if extraction.follow_up_date %}<p class="text-sm">📅 Następny kontakt: {{ extraction.follow_up_date }}</p>{% endif %}
+    <details class="collapse collapse-arrow bg-base-200">
+      <summary class="collapse-title text-sm font-medium">📝 Transkrypcja</summary>
+      <div class="collapse-content"><p class="whitespace-pre-line text-sm">{{ note.transcript|default:note.typed_text|default:"(brak transkrypcji)" }}</p></div>
+    </details>
+    {% if note.audio %}
+    <audio controls preload="none" class="w-full" src="{% url 'voice:audio' note.pk %}"></audio>
+    {% elif note.audio_deleted_at %}<p class="text-xs opacity-60">Nagranie usunięte {{ note.audio_deleted_at|date:"d.m.Y" }} (retencja).</p>{% endif %}
+  </div>
+</div>
+
+{% if note.status == "POTWIERDZONA" %}
+<div class="alert alert-success mb-3">
+  ✅ Zatwierdzono {{ note.confirmed_at|date:"d.m.Y H:i" }}: zadań {{ result_counts.tasks }}, zgłoszeń serwisowych {{ result_counts.tickets }}, części {{ result_counts.parts }}.
+  {% if note.customer %}{% url 'customers:detail' note.customer.pk as customer_url %}{% if customer_url %}<a class="link" href="{{ customer_url }}">Karta klienta</a>{% endif %}{% endif %}
+</div>
+<div class="card bg-base-100 shadow">
+  <div class="card-body p-4">
+    <h2 class="font-bold">Klient: {{ note.customer|default:"—" }}</h2>
+    <ul class="list-disc pl-5 text-sm">
+      {% for t in extraction.tasks %}<li>{{ t.title }}{% if t.due_date %} — do {{ t.due_date }}{% endif %}</li>{% endfor %}
+      {% for s in extraction.service %}<li>🔧 {{ s.title }}{% for p in s.parts %}{% if forloop.first %}: {% endif %}{{ p.name }} ×{{ p.quantity }}{% if not forloop.last %}, {% endif %}{% endfor %}</li>{% endfor %}
+    </ul>
+  </div>
+</div>
+{% elif not is_processing %}
+<form method="post" action="{% url 'voice:confirm' note.pk %}" class="flex flex-col gap-3" x-data="{ extraTasks: 0, extraService: 0 }">
+  {% csrf_token %}
+  <input type="hidden" name="task_total" value="{{ task_rows|length }}">
+  <input type="hidden" name="service_total" value="{{ service_rows|length }}">
+
+  <div class="card bg-base-100 shadow">
+    <div class="card-body p-4 gap-2">
+      {{ customer_initial|json_script:"note-customer" }}
+      <div class="form-control" x-data="{
+          id: '', label: '', q: '', results: [], searching: false, failed: false, seq: 0,
+          init() { const d = JSON.parse(document.getElementById('note-customer').textContent) || {}; this.id = d.id || ''; this.label = d.label || ''; },
+          async search() {
+            const q = this.q.trim(); const seq = ++this.seq;
+            if (q.length < 2) { this.results = []; this.failed = false; return; }
+            this.searching = true;
+            try {
+              const r = await fetch('{% url 'customers:search' %}?format=json&q=' + encodeURIComponent(q), {credentials: 'same-origin', headers: {Accept: 'application/json'}});
+              if (!r.ok) throw new Error(r.status);
+              const data = await r.json();
+              if (seq === this.seq) { this.results = Array.isArray(data.results) ? data.results : []; this.failed = false; }
+            } catch (e) { if (seq === this.seq) { this.results = []; this.failed = true; } }
+            finally { if (seq === this.seq) this.searching = false; }
+          },
+          pick(c) { this.id = c.id; this.label = c.city ? c.name + ' (' + c.city + ')' : c.name; this.q = ''; this.results = []; },
+          clear() { this.id = ''; this.label = ''; }
+        }">
+        <span class="label-text font-semibold">🏥 Klient</span>
+        <input type="hidden" name="customer" :value="id" value="{{ customer_initial.id }}">
+        <div class="flex items-center gap-2 py-1">
+          <span class="font-medium" x-text="label || '— nie wybrano —'">{{ customer_initial.label|default:"— nie wybrano —" }}</span>
+          <button type="button" class="btn btn-ghost btn-xs" x-show="id" x-cloak @click="clear()">✕ wyczyść</button>
+        </div>
+        <input type="search" class="input input-bordered" placeholder="Szukaj klienta: nazwa, miasto, NIP…" autocomplete="off"
+               aria-label="Szukaj klienta" x-model="q" @input.debounce.250ms="search()" @keydown.enter.prevent>
+        <ul class="menu bg-base-200 rounded-box mt-1 p-1" x-show="results.length || failed || (q.trim().length >= 2 && !searching)" x-cloak>
+          <template x-for="c in results" :key="c.id">
+            <li><button type="button" class="justify-start text-left" @click="pick(c)" x-text="c.city ? c.name + ' · ' + c.city : c.name"></button></li>
+          </template>
+          <li x-show="failed" class="p-2 text-sm text-warning">Nie udało się wyszukać — sprawdź połączenie.</li>
+          <li x-show="!failed && !results.length && q.trim().length >= 2 && !searching" class="p-2 text-sm opacity-70">Brak wyników.</li>
+        </ul>
+        {% if not note.customer_id and extraction.customer_guess %}<span class="label-text-alt opacity-70">W notatce: „{{ extraction.customer_guess }}”</span>{% endif %}
+        {% if note.customer_id and not note.customer.is_active %}<span class="label-text-alt text-warning">Klient jest oznaczony jako nieaktywny.</span>{% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="card bg-base-100 shadow">
+    <div class="card-body p-4 gap-3">
+      <h2 class="font-bold">✅ Zadania dla biura i dla Ciebie</h2>
+      {% for row in task_rows %}
+      <div class="border border-base-300 rounded-box p-3 flex flex-col gap-2"
+           {% if row.extra %}x-cloak x-show="extraTasks > {{ row.extra_index }}"{% endif %}>
+        <input type="text" name="task-{{ forloop.counter0 }}-title" value="{{ row.title }}" class="input input-bordered input-sm w-full" placeholder="Co trzeba zrobić?" maxlength="255">
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          <select name="task-{{ forloop.counter0 }}-kind" class="select select-bordered select-sm" aria-label="Typ">
+            {% for value, label in kinds %}<option value="{{ value }}" {% if value == row.kind %}selected{% endif %}>{{ label }}</option>{% endfor %}
+          </select>
+          <input type="date" name="task-{{ forloop.counter0 }}-due" value="{{ row.due_date|default:'' }}" class="input input-bordered input-sm" aria-label="Termin">
+          <select name="task-{{ forloop.counter0 }}-role" class="select select-bordered select-sm" aria-label="Kto">
+            {% for value, label in roles %}<option value="{{ value }}" {% if value == row.assignee_role %}selected{% endif %}>{{ label }}</option>{% endfor %}
+          </select>
+          <select name="task-{{ forloop.counter0 }}-priority" class="select select-bordered select-sm" aria-label="Priorytet">
+            {% for value, label in priorities %}<option value="{{ value }}" {% if value == row.priority %}selected{% endif %}>{{ label }}</option>{% endfor %}
+          </select>
+        </div>
+        {% if not row.extra %}<label class="label cursor-pointer justify-start gap-2 py-0"><input type="checkbox" name="task-{{ forloop.counter0 }}-remove" value="1" class="checkbox checkbox-sm"><span class="label-text text-sm">usuń</span></label>{% endif %}
+      </div>
+      {% endfor %}
+      {% if not has_tasks %}<p class="text-sm opacity-70" x-show="extraTasks === 0">Nie rozpoznano zadań — dodaj je ręcznie, jeśli trzeba.</p>{% endif %}
+      <button type="button" class="btn btn-ghost btn-sm self-start" x-show="extraTasks < {{ extra_task_rows }}" @click="extraTasks++">+ dodaj zadanie</button>
+    </div>
+  </div>
+
+  <div class="card bg-base-100 shadow">
+    <div class="card-body p-4 gap-3">
+      <h2 class="font-bold">🔧 Sprawy serwisowe</h2>
+      {% for row in service_rows %}
+      {% with i=forloop.counter0 %}
+      <div class="border border-base-300 rounded-box p-3 flex flex-col gap-2"
+           {% if row.extra %}x-cloak x-show="extraService > {{ row.extra_index }}"{% endif %}>
+        <input type="text" name="service-{{ i }}-title" value="{{ row.title }}" class="input input-bordered input-sm w-full" placeholder="Np. Awaria USG" maxlength="255">
+        <textarea name="service-{{ i }}-description" class="textarea textarea-bordered textarea-sm" rows="2" placeholder="Opis usterki">{{ row.description }}</textarea>
+        <input type="text" name="service-{{ i }}-device" value="{{ row.device_hint }}" class="input input-bordered input-sm" placeholder="Urządzenie / oddział">
+        <div class="text-sm font-medium">Części do zamówienia</div>
+        {% for part in row.part_rows %}
+        <div class="flex gap-2">
+          <input type="text" name="service-{{ i }}-part-{{ forloop.counter0 }}-name" value="{{ part.name }}" class="input input-bordered input-sm flex-1" placeholder="Nazwa części">
+          <input type="number" min="1" max="999" name="service-{{ i }}-part-{{ forloop.counter0 }}-qty" value="{{ part.quantity|default:1 }}" class="input input-bordered input-sm w-20" aria-label="Ilość">
+        </div>
+        {% endfor %}
+        {% if not row.extra %}<label class="label cursor-pointer justify-start gap-2 py-0"><input type="checkbox" name="service-{{ i }}-remove" value="1" class="checkbox checkbox-sm"><span class="label-text text-sm">usuń</span></label>{% endif %}
+      </div>
+      {% endwith %}
+      {% endfor %}
+      {% if not has_service %}<p class="text-sm opacity-70" x-show="extraService === 0">Brak spraw serwisowych.</p>{% endif %}
+      <button type="button" class="btn btn-ghost btn-sm self-start" x-show="extraService < 1" @click="extraService++">+ dodaj sprawę serwisową</button>
+    </div>
+  </div>
+
+  <div class="flex flex-col sm:flex-row gap-2 sticky bottom-16 md:bottom-2 bg-base-200 py-2">
+    {% if can_confirm %}<button name="action" value="confirm" class="btn btn-success btn-lg flex-1">✅ Zatwierdź</button>{% endif %}
+    {% if can_send_to_office %}<button name="action" value="verify" class="btn btn-outline btn-lg flex-1">📨 Przekaż biuru do weryfikacji</button>{% endif %}
+  </div>
+</form>
+{% endif %}
+{% endblock %}

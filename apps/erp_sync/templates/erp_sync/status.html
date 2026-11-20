@@ -1,0 +1,78 @@
+{% extends "base/base.html" %}
+{% block title %}Integracje · TinyCRM{% endblock %}
+{% block content %}
+<h1 class="text-2xl font-bold mb-3">🔄 Integracje — kontrahenci z ERP</h1>
+
+<div class="grid gap-3 md:grid-cols-2 mb-4">
+  <div class="card bg-base-100 shadow-sm">
+    <div class="card-body p-4 gap-2">
+      <h2 class="card-title text-lg">Import z pliku CSV</h2>
+      <p class="text-sm opacity-80">Plan B, gdy enova365 jest niedostępna. Kolumny rozpoznajemy po nazwach: Kod/Akronim, Nazwa, NIP, Miejscowość, Ulica, Telefon, E-mail. Opiekun, notatki i domena e-mail w CRM nie są nadpisywane.</p>
+      <form method="post" enctype="multipart/form-data" class="flex flex-col gap-2" novalidate
+            x-data="{ busy: false }" @submit="busy = true">
+        {% csrf_token %}
+        {% if form.non_field_errors %}<div class="alert alert-error text-sm">{{ form.non_field_errors|join:" " }}</div>{% endif %}
+        <label class="form-control w-full">
+          <span class="label-text mb-1">{{ form.file.label }}</span>
+          {{ form.file }}
+          {% if form.file.errors %}<span class="text-error text-sm mt-1" role="alert">{{ form.file.errors|join:" " }}</span>
+          {% else %}<span class="text-xs opacity-70 mt-1">{{ form.file.help_text }}</span>{% endif %}
+        </label>
+        <button class="btn btn-primary" :disabled="busy">
+          <span x-show="busy" class="loading loading-spinner loading-sm"></span>
+          <span x-text="busy ? 'Importuję…' : 'Importuj'">Importuj</span>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <div class="card bg-base-100 shadow-sm">
+    <div class="card-body p-4 gap-2">
+      <h2 class="card-title text-lg">Stan źródeł</h2>
+      {% if states %}
+      <ul class="text-sm flex flex-col gap-1">
+        {% for s in states %}
+        <li><span class="font-mono">{{ s.source }}</span> — ostatni sukces:
+          {% if s.last_success_at %}{{ s.last_success_at|date:"d.m.Y H:i" }}{% else %}nigdy{% endif %}
+          {% if s.cursor %}<span class="opacity-70">(kursor: {{ s.cursor }})</span>{% endif %}</li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p class="text-sm opacity-70">Jeszcze nie było synchronizacji. Codzienny import z enova365 rusza o 5:00, gdy połączenie jest skonfigurowane.</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<div class="card bg-base-100 shadow-sm">
+  <div class="card-body p-4">
+    <h2 class="card-title text-lg">Ostatnie przebiegi</h2>
+    {% if runs %}
+    <div class="overflow-x-auto">
+      <table class="table table-sm">
+        <thead><tr><th>Start</th><th>Źródło</th><th>Status</th><th class="text-right">Nowi</th><th class="text-right">Zmienieni</th><th class="text-right">Pominięci</th><th>Uwagi</th></tr></thead>
+        <tbody>
+        {% for run in runs %}
+          <tr class="{% if highlight == run.pk|stringformat:'s' %}bg-base-200{% endif %}" id="przebieg-{{ run.pk }}">
+            <td class="whitespace-nowrap">{{ run.created_at|date:"d.m.Y H:i" }}</td>
+            <td class="font-mono text-xs">{{ run.source }}</td>
+            <td>
+              {% if run.status == "OK" %}<span class="badge badge-success">{{ run.get_status_display }}</span>
+              {% elif run.status == "BLAD" %}<span class="badge badge-error">{{ run.get_status_display }}</span>
+              {% else %}<span class="badge badge-warning">{{ run.get_status_display }}</span>{% endif %}
+            </td>
+            <td class="text-right">{{ run.created }}</td>
+            <td class="text-right">{{ run.updated }}</td>
+            <td class="text-right">{{ run.skipped }}</td>
+            <td class="text-xs max-w-xs">{% if run.error %}<details><summary class="cursor-pointer">{{ run.error|truncatechars:60 }}</summary><pre class="whitespace-pre-wrap">{{ run.error }}</pre></details>{% endif %}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="text-sm opacity-70">Brak przebiegów.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

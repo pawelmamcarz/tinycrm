@@ -16,3 +16,7 @@ import os  # noqa: E402
 
 _suffix = os.environ.get("TEST_DB_SUFFIX", "")
 DATABASES["default"]["TEST"] = {"NAME": f"test_tinycrm_{_suffix}" if _suffix else "test_tinycrm"}  # noqa: F405
+
+# Testy nie wymagają collectstatic — bez STATIC_ROOT WhiteNoise nie ostrzega o brakującym katalogu.
+STATIC_ROOT = None
+SITE_URL = ""

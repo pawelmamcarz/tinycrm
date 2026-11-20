@@ -1,0 +1,8 @@
+<div id="voice-processing" class="alert {% if processing_stale %}alert-warning{% endif %}" hx-get="{% url 'voice:detail' note.pk %}?partial=status" hx-trigger="every {% if processing_stale %}15s{% else %}2s{% endif %}" hx-swap="outerHTML">
+  {% if processing_stale %}
+  <span>⏳ Przetwarzanie trwa dłużej niż zwykle. Notatka jest bezpieczna na serwerze — spróbujemy ponownie automatycznie, a jeśli się nie uda, trafi do biura do weryfikacji. Możesz zamknąć ten ekran.</span>
+  {% else %}
+  <span class="loading loading-spinner loading-md"></span>
+  <span>Przetwarzam notatkę — transkrypcja i rozpoznanie zadań… ({{ note.get_status_display }})</span>
+  {% endif %}
+</div>

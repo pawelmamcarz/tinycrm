@@ -1,0 +1,5 @@
+{% load service_tags %}
+<a href="{% url 'service:ticket_detail' ticket.pk %}" class="flex justify-between items-center gap-2 py-2 border-b border-base-200 text-sm hover:bg-base-200">
+  <span class="min-w-0"><span class="font-mono text-xs opacity-70">{{ ticket.number }}</span> <span class="font-medium">{{ ticket.title }}</span><br><span class="opacity-70">{{ ticket.customer }}{% if ticket.assignee %} · {{ ticket.assignee }}{% endif %} · {{ ticket.created_at|date:"d.m.Y" }}</span></span>
+  <span class="badge badge-sm whitespace-nowrap {{ ticket.status|service_badge }}">{{ ticket.get_status_display }}</span>
+</a>

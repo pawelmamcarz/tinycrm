@@ -1,0 +1,19 @@
+{% extends "base/base.html" %}
+{% block title %}Urządzenia · TinyCRM{% endblock %}
+{% block content %}
+<div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+  <h1 class="text-2xl font-bold">Urządzenia{% if customer %} · {{ customer }}{% endif %}</h1>
+  {% if is_staff %}<a class="btn btn-sm btn-primary" href="{% url 'service:device_create' %}{% if customer %}?customer={{ customer.pk }}{% endif %}">+ Urządzenie</a>{% endif %}
+</div>
+<form method="get" class="flex flex-wrap gap-2 items-center mb-3">
+  <input type="search" name="q" value="{{ q }}" placeholder="Szukaj: model, S/N, klient" class="input input-bordered input-sm w-full sm:w-72">
+  {% if customer %}<input type="hidden" name="customer" value="{{ customer.pk }}">{% endif %}
+  <label class="label cursor-pointer gap-2"><input type="checkbox" name="overdue" value="1" class="checkbox checkbox-sm" {% if overdue %}checked{% endif %}><span class="label-text">tylko po terminie</span></label>
+  <button class="btn btn-sm">Filtruj</button>
+  {% if q or overdue or customer %}<a class="btn btn-sm btn-ghost" href="{% url 'service:devices' %}">Wyczyść</a>{% endif %}
+</form>
+<div class="card bg-base-100 shadow"><div class="card-body p-3">
+  {% for device in page %}{% include "service/_device_row.html" %}{% empty %}<p class="text-sm opacity-60 p-2">Brak urządzeń.</p>{% endfor %}
+</div></div>
+{% include "service/_pagination.html" %}
+{% endblock %}

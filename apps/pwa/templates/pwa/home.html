@@ -1,0 +1,89 @@
+{% extends "base/base.html" %}
+{% load static %}
+{% block title %}Teren · TinyCRM{% endblock %}
+{% block head %}{% endblock %}
+{% block content %}
+<div class="max-w-xl mx-auto space-y-4">
+
+  <div id="queue-banner" class="alert alert-warning hidden flex-col items-stretch gap-2" role="status" aria-live="polite">
+    <div class="flex items-center gap-2">
+      <span aria-hidden="true">📤</span>
+      <span id="queue-count" class="font-semibold flex-1"></span>
+      <button type="button" id="queue-send-now" class="btn btn-sm">Wyślij teraz</button>
+    </div>
+    <p id="queue-message" class="text-sm"></p>
+    <ul id="queue-list" class="divide-y divide-base-content/10"></ul>
+  </div>
+
+  <a href="{% url 'pwa:record' %}" class="btn btn-primary btn-block h-auto min-h-24 py-6 text-2xl shadow-lg rounded-2xl"
+     data-testid="record-button">
+    🎙️ Nagraj notatkę po wizycie
+  </a>
+
+  <section class="card bg-base-100 shadow" aria-labelledby="today-heading">
+    <div class="card-body p-4">
+      <div class="flex items-center justify-between">
+        <h2 id="today-heading" class="card-title text-lg">Na dziś</h2>
+        <span class="text-sm opacity-70">{{ today|date:"l, j E" }}</span>
+      </div>
+      {% if overdue_count %}<p class="text-sm text-error">Zaległe: {{ overdue_count }}</p>{% endif %}
+      {% if tasks %}
+      <ul class="divide-y divide-base-200">
+        {% for task in tasks %}
+        <li class="py-2">
+          <a href="{% url 'tasks:detail' task.pk %}" class="flex items-start gap-2 hover:bg-base-200 rounded p-1 -m-1">
+            <span aria-hidden="true">{{ task.source_icon }}</span>
+            <span class="flex-1 min-w-0">
+              <span class="block font-medium">{{ task.title }}</span>
+              {% if task.customer %}<span class="block text-sm opacity-70 truncate">{{ task.customer }}</span>{% endif %}
+            </span>
+            {% if task.is_overdue %}<span class="badge badge-error badge-sm whitespace-nowrap">po terminie {{ task.due_date|date:"j.m" }}</span>
+            {% else %}<span class="badge badge-warning badge-sm">dziś</span>{% endif %}
+            {% if task.priority == 3 %}<span class="badge badge-error badge-outline badge-sm">pilne</span>{% endif %}
+          </a>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p class="opacity-70">Nic na dziś. 👍</p>
+      {% endif %}
+      <div class="card-actions justify-end"><a href="{% url 'tasks:mine' %}" class="link link-primary text-sm">Wszystkie moje zadania →</a></div>
+    </div>
+  </section>
+
+  <section class="card bg-base-100 shadow" aria-labelledby="notes-heading">
+    <div class="card-body p-4">
+      <div class="flex items-center justify-between">
+        <h2 id="notes-heading" class="card-title text-lg">Moje notatki</h2>
+        {% if to_confirm_count %}<span class="badge badge-warning">do potwierdzenia: {{ to_confirm_count }}</span>{% endif %}
+      </div>
+      <p id="notes-refresh" class="hidden text-sm text-success">Wysłano notatki z kolejki. <a href="{% url 'pwa:home' %}" class="link">Odśwież</a></p>
+      {% if notes %}
+      <ul class="divide-y divide-base-200">
+        {% for note in notes %}
+        <li class="py-2 {% if note.status == 'DO_POTWIERDZENIA' %}bg-warning/20 -mx-2 px-2 rounded{% endif %}">
+          <div class="flex items-center gap-2">
+            <a href="{% url 'voice:detail' note.pk %}" class="flex-1 min-w-0">
+              <span class="block font-medium truncate">{% if note.customer %}{{ note.customer }}{% else %}Klient nierozpoznany{% endif %}</span>
+              <span class="block text-xs opacity-70">{{ note.created_at|date:"j.m H:i" }}</span>
+            </a>
+            {% include "voice/_status_badge.html" with note=note %}
+          </div>
+          {% if note.status == 'DO_POTWIERDZENIA' %}
+          <a href="{% url 'voice:detail' note.pk %}" class="btn btn-warning btn-sm btn-block mt-2">Potwierdź</a>
+          {% endif %}
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p class="opacity-70">Nie masz jeszcze notatek. Po wizycie naciśnij „Nagraj” i po prostu powiedz, co ustaliliście.</p>
+      {% endif %}
+      <div class="card-actions justify-end"><a href="{% url 'voice:list' %}" class="link link-primary text-sm">Wszystkie notatki →</a></div>
+    </div>
+  </section>
+
+  <a href="{% url 'customers:list' %}" class="btn btn-outline btn-block">🏥 Klienci</a>
+</div>
+{{ pwa_config|json_script:"pwa-config" }}
+{% endblock %}
+{% block scripts %}<script type="module" src="{% static 'pwa/home.js' %}"></script>{% endblock %}

@@ -1,0 +1,53 @@
+{% extends "base/base.html" %}
+{% block title %}Kolejka biura · TinyCRM{% endblock %}
+{% block content %}
+<div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+  <h1 class="text-2xl font-bold">📋 Kolejka biura</h1>
+  <a href="{% url 'tasks:create' %}" class="btn btn-primary btn-sm">+ Nowe zadanie</a>
+</div>
+
+<div role="tablist" class="tabs tabs-boxed mb-3 overflow-x-auto flex-nowrap">
+  {% for t in tabs %}
+  <a role="tab" href="?tab={{ t.key }}{% if filter_query %}&{{ filter_query }}{% endif %}"
+     class="tab whitespace-nowrap {% if t.key == tab %}tab-active{% endif %}">
+    {{ t.label }} <span class="badge badge-sm ml-1 {% if t.key == 'po_terminie' and t.count %}badge-error{% endif %}">{{ t.count }}</span>
+  </a>
+  {% endfor %}
+</div>
+
+<form method="get" class="flex flex-wrap gap-2 mb-4 items-end">
+  <input type="hidden" name="tab" value="{{ tab }}">
+  <label class="form-control w-full sm:w-auto">
+    <span class="label-text text-xs">Wykonawca</span>
+    <select name="assignee" class="select select-bordered select-sm">
+      <option value="">wszyscy</option>
+      <option value="brak" {% if filters.assignee == "brak" %}selected{% endif %}>— nieprzypisane —</option>
+      {% for u in assignable_users %}<option value="{{ u.pk }}" {% if filters.assignee == u.pk|stringformat:"d" %}selected{% endif %}>{{ u }}</option>{% endfor %}
+    </select>
+  </label>
+  <label class="form-control w-full sm:w-auto">
+    <span class="label-text text-xs">Typ</span>
+    <select name="kind" class="select select-bordered select-sm">
+      <option value="">wszystkie</option>
+      {% for value, label in kinds %}<option value="{{ value }}" {% if filters.kind == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
+    </select>
+  </label>
+  <label class="form-control w-full sm:w-auto">
+    <span class="label-text text-xs">Klient</span>
+    <select name="customer" class="select select-bordered select-sm">
+      <option value="">wszyscy</option>
+      {% for c in customers %}<option value="{{ c.pk }}" {% if filters.customer == c.pk|stringformat:"d" %}selected{% endif %}>{{ c }}</option>{% endfor %}
+    </select>
+  </label>
+  <button class="btn btn-sm">Filtruj</button>
+  <a href="?tab={{ tab }}" class="btn btn-sm btn-ghost">Wyczyść</a>
+</form>
+
+<div class="flex flex-col gap-2" id="office-list">
+  {% for task in tasks %}
+    {% include "tasks/_office_row.html" %}
+  {% empty %}
+    <div class="alert">Brak zadań w tej zakładce. 🎉</div>
+  {% endfor %}
+</div>
+{% endblock %}

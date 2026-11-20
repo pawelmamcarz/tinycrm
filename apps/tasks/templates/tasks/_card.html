@@ -1,0 +1,24 @@
+{% load tasks_tags %}
+<div id="task-card-{{ task.pk }}" class="card bg-base-100 shadow-sm {% if task.is_overdue %}border-l-4 border-error{% endif %}">
+  <div class="card-body p-4 gap-2">
+    <a href="{% url 'tasks:detail' task.pk %}" class="font-semibold text-lg leading-tight">{{ task.title }}</a>
+    <div class="flex flex-wrap gap-2 items-center text-sm">
+      {% include "tasks/_source_badge.html" %}
+      {% include "tasks/_status_badge.html" %}
+      {% if task.priority == 3 %}<span class="badge badge-error badge-sm">pilne</span>{% endif %}
+    </div>
+    <div class="text-sm flex flex-col gap-1">
+      {% if task.customer %}<span>🏥 {{ task.customer }}</span>{% endif %}
+      {% include "tasks/_due.html" %}
+    </div>
+    {% if task.is_open %}
+    <div class="card-actions">
+      {% for value, label in task.legal_next_statuses %}{% if value == "ZROBIONE" or value == "W_TOKU" %}
+      <button type="button" class="btn btn-sm {{ value|status_button }} flex-1"
+              hx-post="{% url 'tasks:status' task.pk %}" hx-vals='{"status": "{{ value }}", "view": "card"}'
+              hx-target="#task-card-{{ task.pk }}" hx-swap="outerHTML">{% if value == "ZROBIONE" %}✔ {% endif %}{{ label }}</button>
+      {% endif %}{% endfor %}
+    </div>
+    {% endif %}
+  </div>
+</div>

@@ -1,0 +1,10 @@
+{% load service_tags %}
+<div class="flex flex-wrap gap-1 items-end">
+  {% for value, label in order.legal_next_statuses %}
+  <form method="post" action="{% url 'service:part_order_status' order.pk %}" class="flex gap-1 items-end">
+    {% csrf_token %}<input type="hidden" name="status" value="{{ value }}"><input type="hidden" name="next" value="{{ request.get_full_path }}">
+    {% if value == "ZAMOWIONE" %}<input type="date" name="expected_at" value="{{ order.expected_at|date:'Y-m-d' }}" class="input input-bordered input-xs" aria-label="Spodziewana dostawa" title="Spodziewana dostawa">{% endif %}
+    <button class="btn btn-xs {{ value|service_button }}">{{ label }}</button>
+  </form>
+  {% endfor %}
+</div>

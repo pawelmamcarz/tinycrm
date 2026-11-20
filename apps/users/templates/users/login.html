@@ -4,11 +4,22 @@
 <div class="max-w-sm mx-auto mt-16 card bg-base-100 shadow">
   <form method="post" class="card-body gap-3">{% csrf_token %}
     <h1 class="card-title text-2xl">TinyCRM</h1>
-    {% if form.errors %}<div class="alert alert-error">Błędny login lub hasło.</div>{% endif %}
+    {% if form.errors %}<div class="alert alert-error">{% if form.non_field_errors.as_data.0.code == "throttled" %}{{ form.non_field_errors.0 }}{% else %}Błędny login lub hasło.{% endif %}</div>{% endif %}
     <input name="username" class="input input-bordered" placeholder="Login" autofocus required>
     <input name="password" type="password" class="input input-bordered" placeholder="Hasło" required>
     <input type="hidden" name="next" value="{{ next }}">
     <button class="btn btn-primary">Zaloguj</button>
   </form>
 </div>
+{% endblock %}
+{% block scripts %}
+<script>
+  // Po wylogowaniu usuń strony /teren/ z cache service workera (na wypadek, gdy SW nie przechwycił wylogowania).
+  if ("caches" in window) {
+    caches.keys().then(function (keys) {
+      keys.filter(function (k) { return k.indexOf("tinycrm-pages-") === 0; })
+          .forEach(function (k) { caches.delete(k); });
+    }).catch(function () {});
+  }
+</script>
 {% endblock %}

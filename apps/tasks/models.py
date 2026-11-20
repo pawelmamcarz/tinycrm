@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.db import models
+from django.utils import timezone
 
 from apps.core.models import OrgScopedModel
 
@@ -45,6 +46,21 @@ class TaskSource(models.TextChoices):
     SYSTEM = "SYSTEM", "System (przypomnienie)"
 
 
+SOURCE_ICONS = {
+    TaskSource.GLOS: "🎙️",
+    TaskSource.MAIL: "✉️",
+    TaskSource.RECZNE: "✍️",
+    TaskSource.SYSTEM: "⚙️",
+}
+
+# Prefiks `source_ref` → ścieżka do obiektu źródłowego w innym module (kontrakt URL z AGENTS.md).
+SOURCE_REF_PATHS = {
+    "voice": "/notatki/{id}/",
+    "service_ticket": "/serwis/zgloszenia/{id}/",
+    "inspection": "/serwis/przeglady/{id}/",
+}
+
+
 class Priority(models.IntegerChoices):
     NISKI = 1, "Niski"
     NORMALNY = 2, "Normalny"
@@ -84,6 +100,33 @@ class Task(OrgScopedModel):
     def is_open(self):
         return self.status in OPEN_STATUSES
 
+    @property
+    def is_overdue(self):
+        return bool(self.is_open and self.due_date and self.due_date < timezone.localdate())
+
+    @property
+    def is_due_today(self):
+        return bool(self.is_open and self.due_date and self.due_date == timezone.localdate())
+
+    @property
+    def source_icon(self):
+        return SOURCE_ICONS.get(self.source, "•")
+
+    @property
+    def source_url(self):
+        """Link do źródła zadania (notatka głosowa, zgłoszenie serwisowe) albo pusty string."""
+        prefix, _sep, ident = (self.source_ref or "").partition(":")
+        template = SOURCE_REF_PATHS.get(prefix)
+        if not template or not (ident.isascii() and ident.isdigit()):
+            return ""
+        return template.format(id=int(ident))
+
+    @property
+    def legal_next_statuses(self):
+        """Lista (wartość, etykieta) dozwolonych przejść z bieżącego statusu, w stałej kolejności."""
+        allowed = TASK_LEGAL_TRANSITIONS.get(self.status, set())
+        return [(value, label) for value, label in TaskStatus.choices if value in allowed]
+
 
 class TaskComment(OrgScopedModel):
     task = models.ForeignKey(Task, on_delete=models.CASCADE, related_name="comments")
@@ -91,4 +134,10 @@ class TaskComment(OrgScopedModel):
     text = models.TextField("komentarz")
 
     class Meta:
+        verbose_name = "komentarz"
+        verbose_name_plural = "komentarze"
         ordering = ["created_at"]
+
+    def __str__(self):
+        return self.text[:50]
+

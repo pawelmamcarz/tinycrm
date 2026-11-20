@@ -1,0 +1,4 @@
+<a href="{% url 'service:device_detail' device.pk %}" class="flex justify-between items-center gap-2 py-2 border-b border-base-200 text-sm hover:bg-base-200">
+  <span class="min-w-0"><span class="font-medium">{{ device.name }}</span>{% if device.serial_number %} <span class="opacity-60">S/N {{ device.serial_number }}</span>{% endif %}<br><span class="opacity-70">{{ device.customer }}{% if device.location %} · {{ device.location }}{% endif %}</span></span>
+  {% include "service/_inspection_due.html" %}
+</a>

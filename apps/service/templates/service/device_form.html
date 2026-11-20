@@ -1,0 +1,25 @@
+{% extends "base/base.html" %}
+{% block title %}{% if device %}Edycja urządzenia{% else %}Nowe urządzenie{% endif %} · TinyCRM{% endblock %}
+{% block content %}
+<div class="text-sm breadcrumbs mb-2"><ul>
+  <li><a href="{% url 'service:devices' %}">Urządzenia</a></li>
+  {% if device %}<li><a href="{% url 'service:device_detail' device.pk %}">{{ device }}</a></li><li>Edycja</li>{% else %}<li>Nowe</li>{% endif %}
+</ul></div>
+<div class="card bg-base-100 shadow max-w-2xl"><div class="card-body p-4">
+  <h1 class="card-title">{% if device %}Edycja urządzenia{% else %}Nowe urządzenie{% endif %}</h1>
+  <form method="post" novalidate class="grid gap-3">
+    {% csrf_token %}
+    {% if form.non_field_errors %}<div class="alert alert-error">{{ form.non_field_errors }}</div>{% endif %}
+    {% for field in form %}
+    <label class="form-control">
+      <span class="label-text">{{ field.label }}</span>
+      {{ field }}
+      {% if field.help_text %}<span class="label-text-alt opacity-60 mt-1">{{ field.help_text }}</span>{% endif %}
+      {% for error in field.errors %}<span class="text-error text-sm">{{ error }}</span>{% endfor %}
+    </label>
+    {% endfor %}
+    <div class="flex gap-2"><button class="btn btn-primary">Zapisz</button>
+      <a class="btn btn-ghost" href="{% if device %}{% url 'service:device_detail' device.pk %}{% else %}{% url 'service:devices' %}{% endif %}">Anuluj</a></div>
+  </form>
+</div></div>
+{% endblock %}

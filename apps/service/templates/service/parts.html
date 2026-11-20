@@ -1,0 +1,30 @@
+{% extends "base/base.html" %}
+{% load service_tags %}
+{% block title %}Części · TinyCRM{% endblock %}
+{% block content %}
+<h1 class="text-2xl font-bold mb-3">Zamówienia części</h1>
+<div class="grid md:grid-cols-3 gap-4">
+  {% for group in groups %}
+  <div class="card bg-base-100 shadow"><div class="card-body p-3 gap-2">
+    <h2 class="card-title text-base"><span class="badge {{ group.status|service_badge }}">{{ group.orders|length }}</span> {{ group.label }}</h2>
+    {% for order in group.orders %}
+    <div class="border border-base-200 rounded-box p-2 text-sm grid gap-1">
+      <div class="font-medium">{{ order.part_name }} ×{{ order.quantity }}{% if order.part_number %} <span class="opacity-60">({{ order.part_number }})</span>{% endif %}</div>
+      <div class="opacity-70">{{ order.customer }}{% if order.supplier %} · {{ order.supplier }}{% endif %}</div>
+      {% if order.ticket %}<a class="link link-primary text-xs" href="{% url 'service:ticket_detail' order.ticket.pk %}">{{ order.ticket.number }} {{ order.ticket.title }}</a>{% endif %}
+      {% if order.expected_at %}<div class="text-xs {% if order.status == 'ZAMOWIONE' and order.expected_at < today %}text-error font-semibold{% endif %}">dostawa {{ order.expected_at|date:"d.m.Y" }}</div>{% endif %}
+      {% include "service/_part_status_buttons.html" %}
+    </div>
+    {% empty %}<p class="text-sm opacity-60">Pusto.</p>{% endfor %}
+  </div></div>
+  {% endfor %}
+</div>
+{% if recent_installed %}
+<div class="card bg-base-100 shadow mt-4"><div class="card-body p-3">
+  <h2 class="card-title text-base">Ostatnio zamontowane</h2>
+  {% for order in recent_installed %}
+  <div class="flex justify-between text-sm py-1 border-b border-base-200"><span>{{ order.part_name }} ×{{ order.quantity }} · {{ order.customer }}</span><span>{{ order.installed_at|date:"d.m.Y" }}</span></div>
+  {% endfor %}
+</div></div>
+{% endif %}
+{% endblock %}

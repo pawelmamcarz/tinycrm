@@ -1,7 +1,14 @@
 from django.conf import settings
 from django.db import models
+from django.utils import timezone
 
 from apps.core.models import OrgScopedModel
+
+
+def _legal_choices(choices, transitions, current):
+    """Lista (wartość, etykieta) dozwolonych przejść z bieżącego statusu, w stałej kolejności."""
+    allowed = transitions.get(current, set())
+    return [(value, label) for value, label in choices if value in allowed]
 
 
 class Device(OrgScopedModel):
@@ -27,6 +34,20 @@ class Device(OrgScopedModel):
     def __str__(self):
         return f"{self.name} ({self.serial_number})" if self.serial_number else self.name
 
+    @property
+    def is_inspection_overdue(self):
+        return bool(self.next_inspection_due and self.next_inspection_due < timezone.localdate())
+
+    @property
+    def days_to_inspection(self):
+        if not self.next_inspection_due:
+            return None
+        return (self.next_inspection_due - timezone.localdate()).days
+
+    @property
+    def is_under_warranty(self):
+        return bool(self.warranty_until and self.warranty_until >= timezone.localdate())
+
 
 class InspectionStatus(models.TextChoices):
     ZAPLANOWANY = "ZAPLANOWANY", "Zaplanowany"
@@ -34,6 +55,8 @@ class InspectionStatus(models.TextChoices):
     WYKONANY = "WYKONANY", "Wykonany"
     ANULOWANY = "ANULOWANY", "Anulowany"
 
+
+OPEN_INSPECTION_STATUSES = (InspectionStatus.ZAPLANOWANY, InspectionStatus.UMOWIONY)
 
 INSPECTION_LEGAL_TRANSITIONS = {
     InspectionStatus.ZAPLANOWANY: {InspectionStatus.UMOWIONY, InspectionStatus.WYKONANY, InspectionStatus.ANULOWANY},
@@ -60,6 +83,26 @@ class Inspection(OrgScopedModel):
         verbose_name = "przegląd"
         verbose_name_plural = "przeglądy"
         ordering = ["due_date"]
+        constraints = [
+            # Najwyżej jeden otwarty przegląd na urządzenie (planowanie dzienne jest idempotentne).
+            models.UniqueConstraint(fields=["device"], condition=models.Q(status__in=["ZAPLANOWANY", "UMOWIONY"]),
+                                    name="uniq_open_inspection_per_device"),
+        ]
+
+    def __str__(self):
+        return f"Przegląd {self.device} do {self.due_date:%d.%m.%Y}"
+
+    @property
+    def is_open(self):
+        return self.status in OPEN_INSPECTION_STATUSES
+
+    @property
+    def is_overdue(self):
+        return bool(self.is_open and self.due_date < timezone.localdate())
+
+    @property
+    def legal_next_statuses(self):
+        return _legal_choices(InspectionStatus.choices, INSPECTION_LEGAL_TRANSITIONS, self.status)
 
 
 class TicketStatus(models.TextChoices):
@@ -69,6 +112,8 @@ class TicketStatus(models.TextChoices):
     ZAKONCZONE = "ZAKONCZONE", "Zakończone"
     ANULOWANE = "ANULOWANE", "Anulowane"
 
+
+OPEN_TICKET_STATUSES = (TicketStatus.NOWE, TicketStatus.W_TOKU, TicketStatus.CZEKA_NA_CZESC)
 
 TICKET_LEGAL_TRANSITIONS = {
     TicketStatus.NOWE: {TicketStatus.W_TOKU, TicketStatus.CZEKA_NA_CZESC, TicketStatus.ANULOWANE},
@@ -105,6 +150,14 @@ class ServiceTicket(OrgScopedModel):
     def __str__(self):
         return f"{self.number} {self.title}".strip()
 
+    @property
+    def is_open(self):
+        return self.status in OPEN_TICKET_STATUSES
+
+    @property
+    def legal_next_statuses(self):
+        return _legal_choices(TicketStatus.choices, TICKET_LEGAL_TRANSITIONS, self.status)
+
 
 class PartOrderStatus(models.TextChoices):
     DO_ZAMOWIENIA = "DO_ZAMOWIENIA", "Do zamówienia"
@@ -113,6 +166,9 @@ class PartOrderStatus(models.TextChoices):
     ZAMONTOWANE = "ZAMONTOWANE", "Zamontowane"
     ANULOWANE = "ANULOWANE", "Anulowane"
 
+
+ACTIVE_PART_ORDER_STATUSES = (PartOrderStatus.DO_ZAMOWIENIA, PartOrderStatus.ZAMOWIONE,
+                              PartOrderStatus.DOSTARCZONE)
 
 PART_ORDER_LEGAL_TRANSITIONS = {
     PartOrderStatus.DO_ZAMOWIENIA: {PartOrderStatus.ZAMOWIONE, PartOrderStatus.ANULOWANE},
@@ -146,3 +202,7 @@ class PartOrder(OrgScopedModel):
 
     def __str__(self):
         return f"{self.part_name} ×{self.quantity}"
+
+    @property
+    def legal_next_statuses(self):
+        return _legal_choices(PartOrderStatus.choices, PART_ORDER_LEGAL_TRANSITIONS, self.status)

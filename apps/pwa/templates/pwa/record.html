@@ -1,0 +1,60 @@
+{% extends "base/base.html" %}
+{% load static %}
+{% block title %}Nagraj notatkę · TinyCRM{% endblock %}
+{% block head %}{% endblock %}
+{% block content %}
+<div class="max-w-xl mx-auto space-y-4">
+  <div class="flex items-center gap-2">
+    <a href="{% url 'pwa:home' %}" class="btn btn-ghost btn-sm" aria-label="Wróć do ekranu Teren">←</a>
+    <h1 class="text-xl font-bold">Notatka po wizycie</h1>
+  </div>
+
+  <section class="card bg-base-100 shadow" aria-labelledby="customer-heading">
+    <div class="card-body p-4 gap-2">
+      <h2 id="customer-heading" class="font-semibold">Klient <span class="font-normal text-sm opacity-70">(opcjonalnie)</span></h2>
+      <div id="customer-selected" class="flex items-center gap-2">
+        <span class="badge badge-lg badge-outline h-auto py-1" id="customer-selected-name">Nie wiem / AI rozpozna</span>
+        <button type="button" id="customer-clear" class="btn btn-xs btn-ghost hidden">Zmień na „AI rozpozna”</button>
+      </div>
+      <input type="hidden" id="customer-id" value="">
+      <label class="input input-bordered flex items-center gap-2">
+        <span aria-hidden="true">🔎</span>
+        <input type="search" id="customer-search" class="grow" placeholder="Szukaj klienta (nazwa, miasto)…"
+               autocomplete="off" inputmode="search" aria-label="Szukaj klienta" aria-controls="customer-results">
+      </label>
+      <ul id="customer-results" class="max-h-60 overflow-y-auto" aria-live="polite"></ul>
+    </div>
+  </section>
+
+  <section id="rec-box" class="card bg-base-100 shadow ring-offset-2" aria-labelledby="rec-heading">
+    <div class="card-body p-4 items-center text-center gap-3">
+      <h2 id="rec-heading" class="sr-only">Nagrywanie</h2>
+      <button type="button" id="rec-btn" class="btn btn-primary btn-circle w-40 h-40 text-5xl shadow-xl flex-col"
+              aria-pressed="false">
+        <span id="rec-icon" aria-hidden="true">🎙️</span>
+        <span id="rec-label" class="text-base">Nagrywaj</span>
+      </button>
+      <p id="rec-timer" class="font-mono text-2xl" aria-live="off">0:00 / {{ max_minutes }}:00</p>
+      <p id="rec-status" class="text-sm min-h-5" role="status" aria-live="polite"></p>
+      <audio id="rec-player" class="w-full hidden" controls></audio>
+      <button type="button" id="rec-discard" class="btn btn-sm btn-ghost text-error hidden">Usuń nagranie</button>
+    </div>
+  </section>
+
+  <section class="card bg-base-100 shadow">
+    <div class="card-body p-4 gap-2">
+      <label for="note-text" class="font-semibold">Tekst (możesz poprawić lub wpisać)</label>
+      <textarea id="note-text" class="textarea textarea-bordered w-full min-h-40 text-base" lang="pl"
+                placeholder="Np. Byłem w szpitalu w Kielcach, chcą ofertę na dwa aparaty USG do końca miesiąca…"></textarea>
+      <p id="dictation-hint" class="text-sm min-h-5 opacity-80" aria-live="polite"></p>
+    </div>
+  </section>
+
+  <button type="button" id="send-btn" class="btn btn-success btn-block btn-lg text-xl">📤 Wyślij</button>
+  <p id="send-status" class="text-sm min-h-5 text-center" role="status" aria-live="polite"></p>
+  <p class="text-xs opacity-60 text-center">Notatka najpierw zapisuje się na telefonie — bez zasięgu wyślę ją automatycznie później.</p>
+</div>
+{{ pwa_config|json_script:"pwa-config" }}
+{{ initial_customer|json_script:"initial-customer" }}
+{% endblock %}
+{% block scripts %}<script type="module" src="{% static 'pwa/record.js' %}"></script>{% endblock %}

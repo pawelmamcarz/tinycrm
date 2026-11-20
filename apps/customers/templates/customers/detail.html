@@ -1,0 +1,91 @@
+{% extends "base/base.html" %}
+{% block title %}{{ customer }} · TinyCRM{% endblock %}
+
+{% block content %}
+<div class="text-sm breadcrumbs mb-2"><ul><li><a href="{% url 'customers:list' %}">Klienci</a></li><li>{{ customer }}</li></ul></div>
+<div class="flex flex-wrap items-start justify-between gap-2 mb-3">
+  <div>
+    <h1 class="text-2xl font-bold">{{ customer.name }}</h1>
+    <p class="opacity-70">{{ customer.city|default:"" }}{% if customer.short_name %} · {{ customer.short_name }}{% endif %}{% if not customer.is_active %} <span class="badge badge-ghost">nieaktywny</span>{% endif %}</p>
+  </div>
+  <div class="flex flex-wrap gap-2">
+    <a href="{% url 'pwa:record' %}?klient={{ customer.pk }}" class="btn btn-sm btn-primary">🎙️ Nagraj notatkę</a>
+    <a href="{% url 'tasks:create' %}?customer={{ customer.pk }}" class="btn btn-sm">✅ Nowe zadanie</a>
+    <a href="{% url 'service:devices' %}?customer={{ customer.pk }}" class="btn btn-sm">🔧 Urządzenia</a>
+    <a href="{% url 'service:ticket_create' %}?customer={{ customer.pk }}" class="btn btn-sm">🛠️ Zgłoś usterkę</a>
+    {% if can_edit %}<a href="{% url 'customers:edit' customer.pk %}" class="btn btn-sm">✏️ Edytuj</a>{% endif %}
+  </div>
+</div>
+
+<div class="stats stats-horizontal shadow mb-4 w-full md:w-auto">
+  <div class="stat py-2"><div class="stat-title">Otwarte zadania</div><div class="stat-value text-2xl" data-testid="open-tasks">{{ open_tasks }}</div></div>
+  <div class="stat py-2"><div class="stat-title">Kontakty</div><div class="stat-value text-2xl">{{ contacts|length }}</div></div>
+</div>
+
+<div class="grid md:grid-cols-3 gap-4">
+  <div class="space-y-4">
+    <section class="card bg-base-100 shadow-sm"><div class="card-body p-4">
+      <h2 class="card-title text-base">Dane</h2>
+      <dl class="text-sm grid grid-cols-3 gap-y-1">
+        <dt class="opacity-60">NIP</dt><dd class="col-span-2">{{ customer.nip|default:"—" }}</dd>
+        <dt class="opacity-60">Adres</dt><dd class="col-span-2">{{ customer.address|default:"—" }}{% if customer.city %}, {{ customer.city }}{% endif %}</dd>
+        <dt class="opacity-60">Telefon</dt><dd class="col-span-2">{% if customer.phone %}<a class="link" href="tel:{{ customer.phone }}">{{ customer.phone }}</a>{% else %}—{% endif %}</dd>
+        <dt class="opacity-60">E-mail</dt><dd class="col-span-2 break-all">{% if customer.email %}<a class="link" href="mailto:{{ customer.email }}">{{ customer.email }}</a>{% else %}—{% endif %}</dd>
+        <dt class="opacity-60">Opiekun</dt><dd class="col-span-2">{{ customer.owner|default:"—" }}</dd>
+        {% if customer.enova_id %}<dt class="opacity-60">ID enova</dt><dd class="col-span-2">{{ customer.enova_id }}</dd>{% endif %}
+      </dl>
+      {% if customer.notes %}<p class="text-sm whitespace-pre-line mt-2">{{ customer.notes }}</p>{% endif %}
+    </div></section>
+
+    <section class="card bg-base-100 shadow-sm" x-data="{ open: {% if contact_form.errors %}true{% else %}false{% endif %} }"><div class="card-body p-4">
+      <div class="flex items-center justify-between">
+        <h2 class="card-title text-base">Osoby kontaktowe</h2>
+        <button type="button" class="btn btn-xs" @click="open = !open" :aria-expanded="open">+ Dodaj</button>
+      </div>
+      <form method="post" action="{% url 'customers:contact_add' customer.pk %}" class="space-y-2" x-show="open" x-cloak novalidate>
+        {% csrf_token %}
+        {% for field in contact_form %}
+        <div class="form-control">
+          <label class="label py-1" for="{{ field.id_for_label }}"><span class="label-text">{{ field.label }}{% if field.field.required %} *{% endif %}</span></label>
+          {{ field }}
+          {% for err in field.errors %}<span class="text-error text-sm">{{ err }}</span>{% endfor %}
+        </div>
+        {% endfor %}
+        <button class="btn btn-primary btn-sm w-full">Zapisz kontakt</button>
+      </form>
+      {% if contacts %}
+      <ul class="divide-y">
+        {% for p in contacts %}
+        <li class="py-2 text-sm">
+          <div class="font-medium">{{ p.name }}</div>
+          {% if p.position %}<div class="opacity-70">{{ p.position }}</div>{% endif %}
+          <div class="flex flex-wrap gap-2 mt-1">
+            {% if p.phone %}<a class="btn btn-xs btn-outline" href="tel:{{ p.phone }}">📞 {{ p.phone }}</a>{% endif %}
+            {% if p.email %}<a class="btn btn-xs btn-outline" href="mailto:{{ p.email }}">✉️ {{ p.email }}</a>{% endif %}
+          </div>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}<p class="text-sm opacity-70">Brak osób kontaktowych.</p>{% endif %}
+    </div></section>
+  </div>
+
+  <section class="md:col-span-2 card bg-base-100 shadow-sm"><div class="card-body p-4">
+    <h2 class="card-title text-base">Oś czasu</h2>
+    {% if timeline %}
+    <ul class="space-y-3" data-testid="timeline">
+      {% for e in timeline %}
+      <li class="flex gap-3">
+        <span class="text-xl leading-none" aria-hidden="true">{{ e.icon }}</span>
+        <div class="min-w-0">
+          <div class="text-xs opacity-60">{{ e.date|date:"j E Y, H:i" }}</div>
+          <div class="font-medium">{% if e.url %}<a class="link link-hover" href="{{ e.url }}">{{ e.title }}</a>{% else %}{{ e.title }}{% endif %}</div>
+          {% if e.text %}<div class="text-sm opacity-80 whitespace-pre-line break-words">{{ e.text|truncatechars:300 }}</div>{% endif %}
+        </div>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}<p class="text-sm opacity-70">Brak zdarzeń.</p>{% endif %}
+  </div></section>
+</div>
+{% endblock %}

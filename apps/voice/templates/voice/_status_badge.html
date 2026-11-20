@@ -1,0 +1,5 @@
+{% if note.status == "DO_POTWIERDZENIA" %}<span class="badge badge-warning">⏳ {{ note.get_status_display }}</span>
+{% elif note.status == "DO_WERYFIKACJI" %}<span class="badge badge-info">📨 {{ note.get_status_display }}</span>
+{% elif note.status == "POTWIERDZONA" %}<span class="badge badge-success">✅ {{ note.get_status_display }}</span>
+{% elif note.status == "BLAD" %}<span class="badge badge-error">⚠️ {{ note.get_status_display }}</span>
+{% else %}<span class="badge badge-ghost">⚙️ {{ note.get_status_display }}</span>{% endif %}

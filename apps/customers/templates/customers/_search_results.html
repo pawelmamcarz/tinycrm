@@ -1,0 +1,15 @@
+{% if results %}
+<ul class="menu bg-base-100 rounded-box w-full p-1" role="listbox" aria-label="Wyniki wyszukiwania klientów">
+  {% for c in results %}
+  <li role="option">
+    <button type="button" class="flex flex-col items-start gap-0 text-left" data-customer-id="{{ c.pk }}"
+            data-customer-name="{{ c.name }}" data-customer-city="{{ c.city }}">
+      <span class="font-medium">{{ c.name }}</span>
+      <span class="text-xs opacity-70">{{ c.city|default:"—" }}</span>
+    </button>
+  </li>
+  {% endfor %}
+</ul>
+{% else %}
+<p class="text-sm opacity-70 p-2">{% if q %}Brak klientów dla „{{ q }}”.{% else %}Brak klientów.{% endif %}</p>
+{% endif %}

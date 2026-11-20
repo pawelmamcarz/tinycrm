@@ -1,4 +1,8 @@
-from django.urls import path  # noqa: F401
+from django.urls import path
+
+from . import views
 
 app_name = "erp_sync"
-urlpatterns = []
+urlpatterns = [
+    path("", views.status, name="status"),
+]

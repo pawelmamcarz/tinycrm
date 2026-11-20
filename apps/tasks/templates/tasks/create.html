@@ -1,0 +1,23 @@
+{% extends "base/base.html" %}
+{% block title %}Nowe zadanie · TinyCRM{% endblock %}
+{% block content %}
+<h1 class="text-2xl font-bold mb-3">Nowe zadanie</h1>
+<form method="post" novalidate class="card bg-base-100 shadow max-w-2xl">
+  {% csrf_token %}
+  <div class="card-body p-4 gap-3">
+    {% if form.errors %}<div class="alert alert-error">Popraw zaznaczone pola.</div>{% endif %}
+    {% for field in form %}
+    <label class="form-control w-full">
+      <span class="label-text font-medium">{{ field.label }}{% if field.field.required %} *{% endif %}</span>
+      {{ field }}
+      {% if field.name == "assignee" and user.role == "HANDLOWIEC" %}<span class="label-text-alt opacity-70 mt-1">Puste = trafi do biura (osoba z najmniejszą liczbą zadań).</span>{% endif %}
+      {% for e in field.errors %}<span class="text-error text-sm mt-1">{{ e }}</span>{% endfor %}
+    </label>
+    {% endfor %}
+    <div class="card-actions justify-end">
+      <a href="{% url 'tasks:mine' %}" class="btn btn-ghost">Anuluj</a>
+      <button class="btn btn-primary">Zapisz</button>
+    </div>
+  </div>
+</form>
+{% endblock %}

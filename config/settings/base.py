@@ -63,6 +63,11 @@ WSGI_APPLICATION = "config.wsgi.application"
 DATABASES = {"default": env.db("DATABASE_URL", default="postgres://tinycrm:tinycrm@localhost:5432/tinycrm")}
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 AUTH_USER_MODEL = "users.User"
+AUTHENTICATION_BACKENDS = ["apps.users.throttle.ThrottledModelBackend"]
+# Limity nieudanych logowań (oba ekrany: /logowanie/ i /admin/login/), okno w sekundach.
+LOGIN_MAX_FAILURES_PER_USER = env.int("LOGIN_MAX_FAILURES_PER_USER", default=5)
+LOGIN_MAX_FAILURES_PER_IP = env.int("LOGIN_MAX_FAILURES_PER_IP", default=20)
+LOGIN_FAILURE_WINDOW_SECONDS = env.int("LOGIN_FAILURE_WINDOW_SECONDS", default=15 * 60)
 LOGIN_URL = "/logowanie/"
 LOGIN_REDIRECT_URL = "/"
 LOGOUT_REDIRECT_URL = "/logowanie/"
@@ -104,7 +109,22 @@ VAPID_PRIVATE_KEY = env("VAPID_PRIVATE_KEY", default="")
 VAPID_SUBJECT = env("VAPID_SUBJECT", default="mailto:admin@example.com")
 ENOVA_BASE_URL = env("ENOVA_BASE_URL", default="")
 ENOVA_API_TOKEN = env("ENOVA_API_TOKEN", default="")
+# Organizacja synchronizowana codziennie z enova (puste = jedyna organizacja w systemie)
+ENOVA_ORG_SLUG = env("ENOVA_ORG_SLUG", default="")
+ENOVA_KONTRAHENCI_ENDPOINT = env("ENOVA_KONTRAHENCI_ENDPOINT", default="")  # puste = /api/Kontrahenci
+ENOVA_PAGE_SIZE = env.int("ENOVA_PAGE_SIZE", default=0)  # 0 = domyślnie 100
 VOICE_AUDIO_RETENTION_DAYS = env.int("VOICE_AUDIO_RETENTION_DAYS", default=30)
+
+# Adres bazowy do linków bezwzględnych w mailach (np. https://crm.example.com); puste = ścieżki względne
+SITE_URL = env("SITE_URL", default="").rstrip("/")
+
+# Uploady: nagrania do 25 MB (limit egzekwuje widok voice:upload). Pliki powyżej progu pamięci idą na dysk.
+FILE_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024
+DATA_UPLOAD_MAX_MEMORY_SIZE = 26 * 1024 * 1024
+
+# WhiteNoise: w trybie deweloperskim serwuj statyki prosto z aplikacji (bez collectstatic)
+WHITENOISE_USE_FINDERS = DEBUG
+WHITENOISE_AUTOREFRESH = DEBUG
 
 EMAIL_BACKEND = env("EMAIL_BACKEND", default="django.core.mail.backends.console.EmailBackend")
 DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="TinyCRM <noreply@example.com>")

@@ -1,0 +1,1 @@
+{% if task.due_date %}<span class="whitespace-nowrap {% if task.is_overdue %}text-error font-semibold{% elif task.is_due_today %}text-warning font-semibold{% endif %}">📅 {{ task.due_date|date:"d.m.Y" }}{% if task.is_overdue %} · po terminie{% endif %}</span>{% else %}<span class="opacity-60">bez terminu</span>{% endif %}

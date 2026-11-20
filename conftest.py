@@ -43,3 +43,13 @@ def boss(org):
 @pytest.fixture
 def other_org_user(other_org):
     return _user(other_org, "obcy", Role.BIURO)
+
+
+@pytest.fixture(autouse=True)
+def _clear_cache():
+    """Liczniki prób logowania (i inne wpisy cache) nie przechodzą między testami."""
+    from django.core.cache import cache
+
+    cache.clear()
+    yield
+    cache.clear()

@@ -1,0 +1,49 @@
+{% extends "base/base.html" %}
+{% block title %}Notatki głosowe · TinyCRM{% endblock %}
+{% block content %}
+<div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+  <h1 class="text-2xl font-bold">🎙️ {% if is_office and not only_mine %}Notatki głosowe{% else %}Moje notatki{% endif %}</h1>
+  {% url 'pwa:record' as record_url %}{% if record_url %}<a href="{{ record_url }}" class="btn btn-primary btn-sm">🎙️ Nagraj notatkę</a>{% endif %}
+</div>
+
+<div role="tablist" class="tabs tabs-boxed mb-3 overflow-x-auto">
+  {% for key, label in filters %}
+  <a role="tab" class="tab {% if key == current %}tab-active{% endif %}" href="?{% if key %}f={{ key }}{% endif %}{% if only_mine %}{% if key %}&{% endif %}moje=1{% endif %}">
+    {{ label }}{% if key == "do_weryfikacji" and counts.do_weryfikacji %} <span class="badge badge-info badge-sm ml-1">{{ counts.do_weryfikacji }}</span>{% endif %}
+  </a>
+  {% endfor %}
+  {% if is_office %}<a role="tab" class="tab {% if only_mine %}tab-active{% endif %}" href="?moje=1">Tylko moje</a>{% endif %}
+</div>
+
+{% if not is_office %}
+<details class="collapse collapse-arrow bg-base-100 shadow mb-3">
+  <summary class="collapse-title font-medium">⌨️ Nie możesz mówić? Wpisz notatkę</summary>
+  <div class="collapse-content">
+    <form method="post" action="{% url 'voice:upload' %}" class="flex flex-col gap-2">
+      {% csrf_token %}
+      <textarea name="typed_text" class="textarea textarea-bordered" rows="3" placeholder="Np. Byłem w szpitalu… chcą ofertę do piątku…" required></textarea>
+      <button class="btn btn-primary btn-sm self-end">Wyślij</button>
+    </form>
+  </div>
+</details>
+{% endif %}
+
+<div class="flex flex-col gap-2">
+  {% for note in notes %}
+  <a href="{% url 'voice:detail' note.pk %}" class="card bg-base-100 shadow hover:shadow-md">
+    <div class="card-body p-3 gap-1">
+      <div class="flex flex-wrap items-center gap-2 text-sm">
+        {% include "voice/_status_badge.html" %}
+        <span class="opacity-70">{{ note.recorded_at|default:note.created_at|date:"d.m.Y H:i" }}</span>
+        {% if is_office %}<span class="opacity-70">· {{ note.author }}</span>{% endif %}
+        {% if note.audio %}<span title="nagranie">🔊</span>{% endif %}
+      </div>
+      <div class="font-semibold">{{ note.customer|default:"Klient nierozpoznany" }}</div>
+      <div class="text-sm opacity-80 line-clamp-2">{{ note.extraction.summary|default:note.transcript|default:note.typed_text|default:"—"|truncatechars:200 }}</div>
+    </div>
+  </a>
+  {% empty %}
+  <div class="alert">Brak notatek. Po wizycie nagraj krótką notatkę — resztę zrobi system.</div>
+  {% endfor %}
+</div>
+{% endblock %}

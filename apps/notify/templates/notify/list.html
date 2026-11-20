@@ -1,0 +1,60 @@
+{% extends "base/base.html" %}
+{% load static %}
+{% block title %}Powiadomienia · TinyCRM{% endblock %}
+{% block content %}
+<div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+  <h1 class="text-2xl font-bold">🔔 Powiadomienia</h1>
+  {% if unread %}
+  <form method="post" action="{% url 'notify:mark_all_read' %}">{% csrf_token %}
+    <button class="btn btn-sm btn-outline">Oznacz wszystkie jako przeczytane ({{ unread }})</button>
+  </form>
+  {% endif %}
+</div>
+
+<div id="push-box" class="card bg-base-100 shadow-sm mb-4"
+     data-vapid-url="{% url 'notify:vapid_key' %}"
+     data-subscribe-url="{% url 'notify:subscribe' %}"
+     data-unsubscribe-url="{% url 'notify:unsubscribe' %}"
+     data-sw-url="{{ service_worker_url }}"
+     data-csrf="{{ csrf_token }}">
+  <div class="card-body p-4 gap-2">
+    <div class="flex flex-wrap items-center gap-2">
+      <button type="button" class="btn btn-primary btn-sm" data-push-enable>Włącz powiadomienia</button>
+      <button type="button" class="btn btn-ghost btn-sm hidden" data-push-disable>Wyłącz na tym urządzeniu</button>
+    </div>
+    <p class="text-sm opacity-80" data-push-status role="status" aria-live="polite">
+      {% if push_configured %}Powiadomienia na telefonie: o nowych zadaniach i sprawach załatwionych przez biuro.{% else %}Powiadomienia push nie są jeszcze skonfigurowane na serwerze — powiadomienia widać tylko tutaj.{% endif %}
+    </p>
+  </div>
+</div>
+
+{% if page.object_list %}
+<ul class="space-y-2">
+  {% for n in page.object_list %}
+  <li>
+    <form method="post" action="{% url 'notify:open' n.pk %}">{% csrf_token %}
+      <button class="w-full text-left card shadow-sm {% if n.read_at %}bg-base-100 opacity-70{% else %}bg-base-100 border-l-4 border-primary{% endif %}">
+        <div class="card-body p-3 gap-1">
+          <div class="flex items-start justify-between gap-2">
+            <span class="font-semibold">{% if not n.read_at %}<span class="badge badge-primary badge-xs mr-1" aria-label="nowe"></span>{% endif %}{{ n.title }}</span>
+            <time class="text-xs opacity-70 whitespace-nowrap" datetime="{{ n.created_at|date:'c' }}">{{ n.created_at|date:"d.m H:i" }}</time>
+          </div>
+          {% if n.body %}<p class="text-sm whitespace-pre-line opacity-80">{{ n.body|truncatechars:300 }}</p>{% endif %}
+        </div>
+      </button>
+    </form>
+  </li>
+  {% endfor %}
+</ul>
+{% if page.has_other_pages %}
+<div class="join mt-4">
+  {% if page.has_previous %}<a class="join-item btn btn-sm" href="?strona={{ page.previous_page_number }}">« Nowsze</a>{% endif %}
+  <span class="join-item btn btn-sm btn-disabled">Strona {{ page.number }} z {{ page.paginator.num_pages }}</span>
+  {% if page.has_next %}<a class="join-item btn btn-sm" href="?strona={{ page.next_page_number }}">Starsze »</a>{% endif %}
+</div>
+{% endif %}
+{% else %}
+<div class="alert">Brak powiadomień. Tu pojawią się nowe zadania, sprawy załatwione przez biuro i przypomnienia.</div>
+{% endif %}
+{% endblock %}
+{% block scripts %}<script src="{% static 'notify/push.js' %}" defer></script>{% endblock %}

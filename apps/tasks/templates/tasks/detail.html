@@ -1,0 +1,75 @@
+{% extends "base/base.html" %}
+{% load tasks_tags %}
+{% block title %}{{ task.title }} · TinyCRM{% endblock %}
+{% block content %}
+<div class="text-sm breadcrumbs mb-2">
+  <ul>
+    {% if is_office %}<li><a href="{% url 'tasks:office' %}">Kolejka biura</a></li>{% else %}<li><a href="{% url 'tasks:mine' %}">Moje zadania</a></li>{% endif %}
+    <li>Zadanie #{{ task.pk }}</li>
+  </ul>
+</div>
+
+<div class="card bg-base-100 shadow mb-4">
+  <div class="card-body p-4 gap-3">
+    <div class="flex flex-wrap items-center gap-2">
+      {% include "tasks/_source_badge.html" %}
+      {% include "tasks/_status_badge.html" %}
+      <span class="badge badge-ghost badge-sm">{{ task.get_kind_display }}</span>
+      <span class="badge badge-sm {% if task.priority == 3 %}badge-error{% else %}badge-ghost{% endif %}">priorytet: {{ task.get_priority_display|lower }}</span>
+    </div>
+    <h1 class="text-2xl font-bold">{{ task.title }}</h1>
+    {% if task.description %}<p class="whitespace-pre-line">{{ task.description }}</p>{% endif %}
+
+    <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-sm">
+      <div><dt class="opacity-60">Klient</dt><dd>{% if task.customer %}{% url 'customers:detail' task.customer.pk as customer_url %}{% if customer_url %}<a class="link" href="{{ customer_url }}">{{ task.customer }}</a>{% else %}{{ task.customer }}{% endif %}{% else %}—{% endif %}</dd></div>
+      <div><dt class="opacity-60">Termin</dt><dd>{% include "tasks/_due.html" %}</dd></div>
+      <div><dt class="opacity-60">Wykonawca</dt><dd>{{ task.assignee|default:"— nieprzypisane —" }}</dd></div>
+      <div><dt class="opacity-60">Zlecający</dt><dd>{{ task.created_by|default:"—" }}</dd></div>
+      <div><dt class="opacity-60">Utworzono</dt><dd>{{ task.created_at|date:"d.m.Y H:i" }}</dd></div>
+      {% if task.done_at %}<div><dt class="opacity-60">Zakończono</dt><dd>{{ task.done_at|date:"d.m.Y H:i" }}</dd></div>{% endif %}
+      <div><dt class="opacity-60">Źródło</dt><dd>{{ task.source_icon }} {{ task.get_source_display }}
+        {% if task.source_url %}· <a class="link link-primary" href="{{ task.source_url }}">pokaż źródło</a>{% endif %}</dd></div>
+    </dl>
+
+    {% if is_office %}
+    <form method="post" action="{% url 'tasks:assign' task.pk %}" class="flex flex-wrap gap-2 items-end">
+      {% csrf_token %}
+      <label class="form-control">
+        <span class="label-text text-xs">Przypisz do</span>
+        <select name="assignee" class="select select-bordered select-sm">
+          <option value="">— nieprzypisane —</option>
+          {% for u in assignable_users %}<option value="{{ u.pk }}" {% if u.pk == task.assignee_id %}selected{% endif %}>{{ u }}</option>{% endfor %}
+        </select>
+      </label>
+      <button class="btn btn-sm">Zapisz</button>
+    </form>
+    {% endif %}
+
+    {% if can_change and task.legal_next_statuses %}
+    <div class="flex flex-wrap gap-2 pt-2 border-t border-base-200">
+      {% for value, label in task.legal_next_statuses %}
+      <form method="post" action="{% url 'tasks:status' task.pk %}">
+        {% csrf_token %}
+        <input type="hidden" name="status" value="{{ value }}">
+        <button class="btn btn-sm {{ value|status_button }}">{{ label }}</button>
+      </form>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<div class="card bg-base-100 shadow">
+  <div class="card-body p-4 gap-3">
+    <h2 class="font-semibold">💬 Komentarze</h2>
+    {% include "tasks/_comments.html" %}
+    <form method="post" action="{% url 'tasks:comment' task.pk %}"
+          hx-post="{% url 'tasks:comment' task.pk %}" hx-target="#task-comments" hx-swap="outerHTML"
+          hx-on::after-request="if (event.detail.successful) this.reset()" class="flex flex-col sm:flex-row gap-2">
+      {% csrf_token %}
+      <textarea name="text" rows="2" required class="textarea textarea-bordered flex-1" placeholder="Dodaj komentarz…" aria-label="Komentarz"></textarea>
+      <button class="btn btn-primary sm:self-end">Dodaj</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

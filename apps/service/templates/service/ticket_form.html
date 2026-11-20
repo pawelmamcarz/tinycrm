@@ -1,0 +1,19 @@
+{% extends "base/base.html" %}
+{% block title %}Nowe zgłoszenie · TinyCRM{% endblock %}
+{% block content %}
+<div class="card bg-base-100 shadow max-w-2xl"><div class="card-body p-4">
+  <h1 class="card-title">Nowe zgłoszenie serwisowe</h1>
+  <form method="post" novalidate class="grid gap-3">
+    {% csrf_token %}
+    {% if form.non_field_errors %}<div class="alert alert-error">{{ form.non_field_errors }}</div>{% endif %}
+    {% for field in form %}
+    <label class="form-control {% if field.name == 'is_warranty' %}flex-row items-center gap-2{% endif %}">
+      {% if field.name == 'is_warranty' %}{{ field }}<span class="label-text">{{ field.label }}</span>{% else %}<span class="label-text">{{ field.label }}</span>{{ field }}{% endif %}
+      {% for error in field.errors %}<span class="text-error text-sm">{{ error }}</span>{% endfor %}
+    </label>
+    {% endfor %}
+    <div class="flex gap-2"><button class="btn btn-primary">Zgłoś</button>
+      <a class="btn btn-ghost" href="javascript:history.back()">Anuluj</a></div>
+  </form>
+</div></div>
+{% endblock %}

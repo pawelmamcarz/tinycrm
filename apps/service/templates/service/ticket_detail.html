@@ -1,0 +1,69 @@
+{% extends "base/base.html" %}
+{% load service_tags %}
+{% block title %}{{ ticket.number }} · TinyCRM{% endblock %}
+{% block content %}
+<div class="text-sm breadcrumbs mb-2"><ul>
+  {% if is_staff %}<li><a href="{% url 'service:tickets' %}">Zgłoszenia</a></li>{% endif %}<li>{{ ticket.number }}</li>
+</ul></div>
+
+<div class="card bg-base-100 shadow mb-4"><div class="card-body p-4 gap-3">
+  <div class="flex flex-wrap items-center gap-2">
+    <span class="font-mono text-sm opacity-70">{{ ticket.number }}</span>
+    <span class="badge {{ ticket.status|service_badge }}">{{ ticket.get_status_display }}</span>
+    {% if ticket.is_warranty %}<span class="badge badge-outline badge-sm">gwarancyjne</span>{% endif %}
+  </div>
+  <h1 class="text-2xl font-bold">{{ ticket.title }}</h1>
+  {% if ticket.description %}<p class="whitespace-pre-line">{{ ticket.description }}</p>{% endif %}
+  <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-sm">
+    <div><dt class="opacity-60">Klient</dt><dd><a class="link" href="{% url 'customers:detail' ticket.customer.pk %}">{{ ticket.customer }}</a></dd></div>
+    <div><dt class="opacity-60">Urządzenie</dt><dd>{% if ticket.device %}<a class="link" href="{% url 'service:device_detail' ticket.device.pk %}">{{ ticket.device }}</a>{% else %}—{% endif %}</dd></div>
+    <div><dt class="opacity-60">Zgłosił</dt><dd>{{ ticket.reported_by|default:"—" }} · {{ ticket.created_at|date:"d.m.Y H:i" }}</dd></div>
+    <div><dt class="opacity-60">Serwisant</dt><dd>{{ ticket.assignee|default:"— nieprzypisane —" }}</dd></div>
+  </dl>
+  {% if is_staff %}
+  <form method="post" action="{% url 'service:ticket_assign' ticket.pk %}" class="flex flex-wrap gap-2 items-end">
+    {% csrf_token %}
+    <label class="form-control"><span class="label-text text-xs">Serwisant</span>
+      <select name="assignee" class="select select-bordered select-sm">
+        <option value="">— nieprzypisane —</option>
+        {% for u in staff_users %}<option value="{{ u.pk }}" {% if u.pk == ticket.assignee_id %}selected{% endif %}>{{ u }}</option>{% endfor %}
+      </select></label>
+    <button class="btn btn-sm">Zapisz</button>
+  </form>
+  {% if ticket.legal_next_statuses %}
+  <div class="flex flex-wrap gap-2 pt-2 border-t border-base-200">
+    {% for value, label in ticket.legal_next_statuses %}
+    <form method="post" action="{% url 'service:ticket_status' ticket.pk %}">{% csrf_token %}<input type="hidden" name="status" value="{{ value }}">
+      <button class="btn btn-sm {{ value|service_button }}">{{ label }}</button></form>
+    {% endfor %}
+  </div>
+  {% endif %}
+  {% endif %}
+</div></div>
+
+<div class="card bg-base-100 shadow"><div class="card-body p-4 gap-3">
+  <h2 class="card-title text-base">Części</h2>
+  {% for order in part_orders %}
+  <div class="flex flex-wrap justify-between items-center gap-2 py-2 border-b border-base-200 text-sm">
+    <span>{{ order.part_name }} ×{{ order.quantity }}{% if order.part_number %} <span class="opacity-60">({{ order.part_number }})</span>{% endif %}{% if order.supplier %} · {{ order.supplier }}{% endif %}{% if order.expected_at %} · dostawa {{ order.expected_at|date:"d.m.Y" }}{% endif %}</span>
+    <span class="flex flex-wrap items-center gap-2"><span class="badge badge-sm {{ order.status|service_badge }}">{{ order.get_status_display }}</span>
+      {% if is_staff %}{% include "service/_part_status_buttons.html" %}{% endif %}</span>
+  </div>
+  {% empty %}<p class="text-sm opacity-60">Brak zamówionych części.</p>{% endfor %}
+  {% if is_staff %}
+  <details class="collapse collapse-arrow bg-base-200" {% if part_form.errors %}open{% endif %}>
+    <summary class="collapse-title font-medium">+ Dodaj część do zamówienia</summary>
+    <div class="collapse-content">
+      <form method="post" action="{% url 'service:part_order_add' ticket.pk %}" novalidate class="grid sm:grid-cols-2 gap-3">
+        {% csrf_token %}
+        {% for field in part_form %}
+        <label class="form-control"><span class="label-text">{{ field.label }}</span>{{ field }}
+          {% for error in field.errors %}<span class="text-error text-sm">{{ error }}</span>{% endfor %}</label>
+        {% endfor %}
+        <button class="btn btn-primary sm:col-span-2">Dodaj</button>
+      </form>
+    </div>
+  </details>
+  {% endif %}
+</div></div>
+{% endblock %}

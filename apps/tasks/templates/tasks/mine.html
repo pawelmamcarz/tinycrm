@@ -1,0 +1,21 @@
+{% extends "base/base.html" %}
+{% block title %}Moje zadania · TinyCRM{% endblock %}
+{% block content %}
+<div class="flex items-center justify-between gap-2 mb-3">
+  <h1 class="text-2xl font-bold">✅ Moje zadania <span class="badge">{{ total }}</span></h1>
+  <a href="{% url 'tasks:create' %}" class="btn btn-primary btn-sm">+ Nowe</a>
+</div>
+{% if not total %}
+  <div class="alert alert-success">Nie masz otwartych zadań. 🎉</div>
+{% endif %}
+{% for group in groups %}{% if group.tasks %}
+<section class="mb-5">
+  <h2 class="font-semibold mb-2 flex items-center gap-2">
+    <span class="badge badge-{{ group.color }}">{{ group.tasks|length }}</span> {{ group.label }}
+  </h2>
+  <div class="grid gap-2 md:grid-cols-2">
+    {% for task in group.tasks %}{% include "tasks/_card.html" %}{% endfor %}
+  </div>
+</section>
+{% endif %}{% endfor %}
+{% endblock %}
