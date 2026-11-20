@@ -7,6 +7,8 @@
 - Dziś: handlowiec dzwoni do osoby w biurze → ona zapisuje i „ogarnia” tematy (oferty, zamówienia, maile, przypomnienia).
 - Skutek: wszystko trzyma jedna osoba w głowie lub w notatkach, rzeczy giną („coś się zapomina”), nie ma historii klienta, a szef nic nie widzi.
 
+- Skala: ok. **30 osób w całej firmie, w tym 7 handlowców**. Dobra marża, więc jest z czego zapłacić za usprawnienie.
+
 **Wniosek kluczowy:** produkt nie może opierać się na formularzach. Musi przechwytywać informacje tam, gdzie one już powstają: **głos/telefon, mail, WhatsApp/SMS**, a porządkowanie musi robić system (AI) albo biuro, nie handlowiec.
 
 ## 2. Co oferuje rynek
@@ -64,6 +66,14 @@
 - RODO: dane kontaktowe personelu szpitali, nagrania głosowe (gdzie są przetwarzane, retencja nagrań, hosting w UE).
 - Przetargi publiczne: warto mieć terminy przetargów jako typ zadania i przypomnienia.
 - Serwis i przeglądy sprzętu: potencjalny moduł „przypomnij o przeglądzie urządzenia u klienta”.
+
+## 3a. Co oznacza skala (30 osób, 7 handlowców)
+
+- **Użytkownicy:** 7 handlowców, 1–3 osoby w biurze, serwis i szef, czyli ok. 10–15 kont. Gotowy CRM kosztowałby ich ok. 1–2 tys. zł/mies., więc nie przegrywamy z nimi ceną, tylko dopasowaniem (głos, serwis, enova, PL).
+- **Każda zgubiona sprawa jest droga.** Przy dobrej marży na sprzęcie medycznym jedna przegapiona oferta, przetarg albo przegląd może kosztować więcej niż roczny abonament. To jest główny argument sprzedażowy: „ile kosztowała ostatnia rzecz, która umknęła?”.
+- **Mało ludzi = szybkie wdrożenie.** Bez długich szkoleń, decyzja zapada u szefa/właściciela, łatwo zrobić pilotaż z 2 handlowcami.
+- **Ryzyko:** wszystko zależy od kilku osób. Jeśli 2–3 handlowców nie zaakceptuje narzędzia, projekt umiera. Dlatego pilotaż z najbardziej chętnymi i zero wpisywania.
+- **Model biznesowy:** firma #1 jako klient pilotażowy (design partner). W Polsce działa wielu podobnych małych dystrybutorów (medyczny, laboratoryjny, stomatologiczny, przemysłowy) z tym samym problemem i często na enova/Comarch/Subiekt, więc jest potencjał na produkt SaaS.
 
 ## 4. MVP (propozycja, 4–6 tygodni)
 
