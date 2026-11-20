@@ -49,7 +49,14 @@
    - Oś czasu: notatki głosowe, maile, zadania, zamówienia z enova.
    - „Co obiecaliśmy i czego nie zrobiliśmy”.
 
-5. **Integracja z enova365**
+5. **Serwis (części, przeglądy)**
+   - Ten sam mechanizm głosowy: serwisant albo handlowiec mówi „w szpitalu X padł zasilacz w aparacie Y, trzeba zamówić część”, a system tworzy **zgłoszenie serwisowe** z zadaniem „zamów część” dla biura.
+   - Typy zadań: zamówienie części (status: do zamówienia → zamówione → dostarczone → zamontowane), naprawa, reklamacja/gwarancja.
+   - **Baza urządzeń u klientów** (model, numer seryjny, data instalacji, gwarancja) i **harmonogram przeglądów okresowych**. Przegląd to obowiązek prawny dla wyrobów medycznych, a system sam przypomina np. 30 dni przed terminem i tworzy zadanie „umówić przegląd”.
+   - Przy przeglądzie: protokół/zdjęcie protokołu dołączone do urządzenia, następny termin wyliczony automatycznie.
+   - Bonus sprzedażowy: kończąca się gwarancja albo stary sprzęt to sygnał dla handlowca („czas na ofertę wymiany”).
+
+6. **Integracja z enova365**
    - enova ma API (Dynamic WebAPI / dodatek Integrator, REST). Start: **jednostronny import kontrahentów** (i ewentualnie historii dokumentów) do TinyCRM raz dziennie.
    - Później: podgląd zamówień i należności na karcie klienta. Nie zastępujemy enova, tylko nad nią nadbudowujemy.
 
@@ -65,6 +72,7 @@
 3. Zadania z przypisaniem, terminem, przypomnieniami i widokiem dla biura.
 4. Podpięcie jednej skrzynki mailowej i przypinanie maili do klientów.
 5. Poranny skrót dnia (push/mail).
+6. Serwis w wersji minimum: zgłoszenie serwisowe / zamówienie części jako typ zadania ze statusami + lista urządzeń z datą następnego przeglądu i przypomnieniem.
 
 Poza MVP: lejek sprzedażowy, raporty dla szefa, aplikacja natywna, dwustronny sync z enova, telefonia.
 
@@ -84,7 +92,8 @@ Poza MVP: lejek sprzedażowy, raporty dla szefa, aplikacja natywna, dwustronny s
 4. Czego używają handlowcy: WhatsApp, SMS, zwykłe rozmowy telefoniczne? Android czy iPhone?
 5. Jakie tematy najczęściej „giną”: oferty, zamówienia, reklamacje, serwis, przetargi?
 6. Czy szef chce raportów (wizyty, lejek), czy chodzi tylko o to, żeby nic nie przepadało?
-7. Budżet i model: budujemy własny produkt (SaaS dla wielu firm) czy rozwiązanie dla tej jednej firmy?
+7. Serwis: czy mają własnych serwisantów, czy robią to handlowcy? Gdzie dziś jest lista urządzeń u klientów i terminy przeglądów (Excel, enova, nigdzie)? Skąd zamawiają części (producent, hurtownia) i czy to idzie przez enova?
+8. Budżet i model: budujemy własny produkt (SaaS dla wielu firm) czy rozwiązanie dla tej jednej firmy?
 
 ## Źródła
 
